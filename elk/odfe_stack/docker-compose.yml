@@ -1,0 +1,52 @@
+version: "3.3"
+services:
+  odfe-elasticsearch:
+    image: amazon/opendistro-for-elasticsearch:1.13.1
+    container_name: odfe-elasticsearch
+    environment:
+      - "discovery.type=single-node"
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+      - 9300:9300
+    #volumes:
+      #- ./config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+    networks:
+      - odfe-net
+  odfe-kibana:
+    image: amazon/opendistro-for-elasticsearch-kibana:1.13.1
+    container_name: odfe-kibana
+    #environment:
+      #- ELASTICSEARCH_URL: https://odfe-elasticsearch:9200
+      #- ELASTICSEARCH_HOSTS: https://odfe-elasticsearch:9200
+    ports:
+      - 5601:5601
+    volumes:
+      - ./config/kibana.yml:/usr/share/kibana/config/kibana.yml
+    networks:
+      - odfe-net
+    depends_on:
+      - odfe-elasticsearch
+  odfe-logstash:
+    image: docker.elastic.co/logstash/logstash:7.11.1
+    container_name: odfe-logstash
+    ports:
+      - 5044:5044
+      - 5000:5000
+      - 9600:9600
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    volumes:
+      - ./config/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    networks:
+      - odfe-net
+    depends_on:
+      - odfe-elasticsearch
+
+networks:
+  odfe-net:
+    driver: bridge
